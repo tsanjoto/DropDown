@@ -6,8 +6,6 @@
 //  Copyright (c) 2015 Kevin Hirsch. All rights reserved.
 //
 
-#if os(iOS)
-
 import UIKit
 
 public typealias Index = Int
@@ -101,7 +99,18 @@ public final class DropDown: UIView {
         imgv.frame = CGRect(x: 0, y: -10, width: 15, height: 10)
         return imgv
     }()
+    
+    public var borderColor: UIColor = .clear {
+        didSet {
+            tableView.layer.borderColor = borderColor.cgColor
+        }
+    }
 
+    public var borderWidth: CGFloat = 0.0 {
+        didSet {
+            tableView.layer.borderWidth = borderWidth
+        }
+    }
 
 	/// The view to which the drop down will displayed onto.
 	public weak var anchorView: AnchorView? {
@@ -153,7 +162,49 @@ public final class DropDown: UIView {
 	public var width: CGFloat? {
 		didSet { setNeedsUpdateConstraints() }
 	}
-
+    
+    /**
+     The height of the drop down.
+     
+     Defaults to `tableHeight - offscreenHeight`.
+     */
+    public var height: CGFloat? {
+        didSet {
+            setNeedsUpdateConstraints()
+            print("oii")
+            var bot0 = cardIdentityTransform
+            bot0 = CATransform3DTranslate(bot0, 0, -self.tableHeight / 2.7, 0);
+            bot0 = CATransform3DTranslate(bot0, 0, 0, -self.tableHeight);
+            bot0 = CATransform3DRotate(bot0,  (CGFloat.pi / 180.0) * -90.0, 1, 0, 0);
+            var bot1 = self.cardIdentityTransform
+            bot1 = CATransform3DTranslate(bot1, 0, -self.tableHeight/4, 0);
+            bot1 = CATransform3DTranslate(bot1, 0, self.tableHeight/8, -self.tableHeight/2);
+            bot1 = CATransform3DRotate(bot1,  (CGFloat.pi / 180.0) * -45.0, 1, 0, 0);
+            var bot2 = self.cardIdentityTransform
+            bot2 = CATransform3DTranslate(bot2, 0, -self.tableHeight/4, 0);
+            bot2 = CATransform3DTranslate(bot2, 0, self.tableHeight/5, -self.tableHeight/4);
+            bot2 = CATransform3DRotate(bot2,  (CGFloat.pi / 180.0) * -27.5, 1, 0, 0);
+            self.bottomFlipAnimation = [
+                bot0, bot1, bot2
+            ]
+            var top0 = cardIdentityTransform
+            top0 = CATransform3DTranslate(top0, 0, self.tableHeight / 2.7, 0);
+            top0 = CATransform3DTranslate(top0, 0, 0, -self.tableHeight);
+            top0 = CATransform3DRotate(top0,  (CGFloat.pi / 180.0) * 90.0, 1, 0, 0);
+            var top1 = self.cardIdentityTransform
+            top1 = CATransform3DTranslate(top1, 0, self.tableHeight/4, 0);
+            top1 = CATransform3DTranslate(top1, 0, -self.tableHeight/8, -self.tableHeight/2);
+            top1 = CATransform3DRotate(top1,  (CGFloat.pi / 180.0) * 45.0, 1, 0, 0);
+            var top2 = self.cardIdentityTransform
+            top2 = CATransform3DTranslate(top2, 0, self.tableHeight/4, 0);
+            top2 = CATransform3DTranslate(top2, 0, -self.tableHeight/5, -self.tableHeight/4);
+            top2 = CATransform3DRotate(top2,  (CGFloat.pi / 180.0) * 27.5, 1, 0, 0);
+            
+            self.topFlipAnimation = [
+                top0, top1, top2
+            ]
+        }
+    }
 	/**
 	arrowIndication.x
 
@@ -161,15 +212,21 @@ public final class DropDown: UIView {
 	*/
 	public var arrowIndicationX: CGFloat? {
 		didSet {
-			if let arrowIndicationX = arrowIndicationX {
-				tableViewContainer.addSubview(arrowIndication)
-				arrowIndication.tintColor = tableViewBackgroundColor
-				arrowIndication.frame.origin.x = arrowIndicationX
-			} else {
-				arrowIndication.removeFromSuperview()
-			}
+			guard let x = arrowIndicationX else { return }
+            arrowIndication.frame.origin.x = x
+            showArrowIndicator = true
 		}
 	}
+    public var showArrowIndicator: Bool = false {
+        didSet {
+            if showArrowIndicator {
+                tableViewContainer.addSubview(arrowIndication)
+                arrowIndication.tintColor = tableViewBackgroundColor
+            } else {
+                arrowIndication.removeFromSuperview()
+            }
+        }
+    }
 
 	//MARK: Constraints
 	fileprivate var heightConstraint: NSLayoutConstraint!
@@ -186,7 +243,7 @@ public final class DropDown: UIView {
 	@objc fileprivate dynamic var tableViewBackgroundColor = DPDConstant.UI.BackgroundColor {
 		willSet {
             tableView.backgroundColor = newValue
-            if arrowIndicationX != nil { arrowIndication.tintColor = newValue }
+            if showArrowIndicator { arrowIndication.tintColor = newValue }
         }
 	}
 
@@ -218,6 +275,16 @@ public final class DropDown: UIView {
 		willSet { tableView.separatorColor = newValue }
 		didSet { reloadAllComponents() }
 	}
+    
+    /**
+     The separator inset
+     
+     Changing the separator inset automatically reloads the drop down.
+     */
+    @objc public dynamic var separatorInset = DPDConstant.UI.SeparatorInset {
+        willSet { tableView.separatorInset = newValue }
+        didSet { reloadAllComponents() }
+    }
 
 	/**
 	The corner radius of DropDown.
@@ -325,6 +392,27 @@ public final class DropDown: UIView {
 		willSet { tableViewContainer.transform = newValue }
 	}
 
+    /**
+    The card identity transformation of the tableview when the DropDown is appearing
+    */
+    public var cardIdentityTransform = DPDConstant.Animation.CardIdentityTransform
+    
+    
+    /**
+        tbd
+    */
+    private var topFlipAnimation:[CATransform3D] = [DPDConstant.Animation.CardIdentityTransform, DPDConstant.Animation.CardIdentityTransform, DPDConstant.Animation.CardIdentityTransform]
+
+    /**
+        tbd
+    */
+    private var bottomFlipAnimation:[CATransform3D] = [DPDConstant.Animation.CardIdentityTransform, DPDConstant.Animation.CardIdentityTransform, DPDConstant.Animation.CardIdentityTransform]
+    
+    /**
+        tbd
+    */
+    private var selectedFlipAnimation:[CATransform3D] = [DPDConstant.Animation.CardIdentityTransform, DPDConstant.Animation.CardIdentityTransform, DPDConstant.Animation.CardIdentityTransform]
+    
 	/**
 	The color of the text for each cells of the drop down.
 
@@ -357,22 +445,21 @@ public final class DropDown: UIView {
      
      Changing the cell nib automatically reloads the drop down.
      */
-	public var cellNib = UINib(nibName: "DropDownCell", bundle: bundle) {
+	public var cellNib = UINib(nibName: "DropDownCell", bundle: Bundle(for: DropDownCell.self)) {
 		didSet {
 			tableView.register(cellNib, forCellReuseIdentifier: DPDConstant.ReusableIdentifier.DropDownCell)
 			templateCell = nil
 			reloadAllComponents()
 		}
 	}
-
-  /// Correctly specify Bundle for Swift Packages
-  fileprivate static var bundle: Bundle {
-    #if SWIFT_PACKAGE
-    return Bundle.module
-    #else
-    return Bundle(for: DropDownCell.self)
-    #endif
-  }
+    
+    public var cellClass: DropDownCustomCell.Type = DropDownCustomCell.self {
+        didSet {
+            tableView.register(cellClass, forCellReuseIdentifier: DPDConstant.ReusableIdentifier.DropDownCell)
+            templateCell = nil
+            reloadAllComponents()
+        }
+    }
 	
 	//MARK: Content
 
@@ -549,6 +636,7 @@ private extension DropDown {
 
 		tableView.backgroundColor = tableViewBackgroundColor
 		tableView.separatorColor = separatorColor
+        tableView.separatorInset = separatorInset
 		tableView.layer.cornerRadius = cornerRadius
 		tableView.layer.masksToBounds = true
 	}
@@ -578,9 +666,15 @@ extension DropDown {
 		xConstraint.constant = layout.x
 		yConstraint.constant = layout.y
 		widthConstraint.constant = layout.width
-		heightConstraint.constant = layout.visibleHeight
+        // Change height of dropdown
+        if height != nil && (height ?? 0) <= layout.visibleHeight {
+            heightConstraint.constant = height!
+        } else {
+            heightConstraint.constant = layout.visibleHeight
+        }
 
-		tableView.isScrollEnabled = layout.offscreenHeight > 0
+        // Enable scrolling if offscreen content or height is set
+        tableView.isScrollEnabled = layout.offscreenHeight > 0 || (height ?? 0) > 0
 
 		DispatchQueue.main.async { [weak self] in
 			self?.tableView.flashScrollIndicators()
@@ -704,28 +798,36 @@ extension DropDown {
 				direction = .top
 			}
 		}
-		
+        
 		constraintWidthToFittingSizeIfNecessary(layout: &layout)
 		constraintWidthToBoundsIfNecessary(layout: &layout, in: window)
 		
-		let visibleHeight = tableHeight - layout.offscreenHeight
+        let visibleHeight = height ?? (tableHeight - layout.offscreenHeight)
 		let canBeDisplayed = visibleHeight >= minHeight
 
+        if showArrowIndicator {
+            arrowIndication.frame.origin.x = computeArrowIndicator(window: window,
+                                                                   layout: layout)
+        }
+        
 		return (layout.x, layout.y, layout.width, layout.offscreenHeight, visibleHeight, canBeDisplayed, direction)
 	}
 
 	fileprivate func computeLayoutBottomDisplay(window: UIWindow) -> ComputeLayoutTuple {
+        self.selectedFlipAnimation = self.bottomFlipAnimation;
 		var offscreenHeight: CGFloat = 0
 		
-		let width = self.width ?? (anchorView?.plainView.bounds.width ?? fittingWidth()) - bottomOffset.x
-		
+		//let width = self.width ?? fittingWidth() - bottomOffset.x
+        let width = self.width ?? (anchorView?.plainView.bounds.width ?? fittingWidth()) - bottomOffset.x
+        let height = self.height ?? tableHeight
+        
 		let anchorViewX = anchorView?.plainView.windowFrame?.minX ?? window.frame.midX - (width / 2)
-		let anchorViewY = anchorView?.plainView.windowFrame?.minY ?? window.frame.midY - (tableHeight / 2)
+        let anchorViewY = anchorView?.plainView.windowFrame?.minY ?? window.frame.midY - (height / 2)
 		
 		let x = anchorViewX + bottomOffset.x
 		let y = anchorViewY + bottomOffset.y
 		
-		let maxY = y + tableHeight
+        let maxY = y + height
 		let windowMaxY = window.bounds.maxY - DPDConstant.UI.HeightPadding - offsetFromWindowBottom
 		
 		let keyboardListener = KeyboardListener.sharedInstance
@@ -741,13 +843,15 @@ extension DropDown {
 	}
 
 	fileprivate func computeLayoutForTopDisplay(window: UIWindow) -> ComputeLayoutTuple {
+        self.selectedFlipAnimation = self.topFlipAnimation;
+
 		var offscreenHeight: CGFloat = 0
 
 		let anchorViewX = anchorView?.plainView.windowFrame?.minX ?? 0
 		let anchorViewMaxY = anchorView?.plainView.windowFrame?.maxY ?? 0
 
 		let x = anchorViewX + topOffset.x
-		var y = (anchorViewMaxY + topOffset.y) - tableHeight
+        var y = (anchorViewMaxY + topOffset.y) - (height ?? tableHeight)
 
 		let windowY = window.bounds.minY + DPDConstant.UI.HeightPadding
 
@@ -760,16 +864,27 @@ extension DropDown {
 		
 		return (x, y, width, offscreenHeight)
 	}
+    
+    fileprivate func computeArrowIndicator(window: UIWindow, layout: ComputeLayoutTuple) -> CGFloat {
+        if let x = arrowIndicationX { return x }
+        guard let anchorViewX = anchorView?.plainView.windowFrame?.minX else {
+            return layout.width / 2
+        }
+        let anchorViewWidth = anchorView?.plainView.bounds.width ?? 0
+        let leftSpacing = max(anchorViewX - layout.x, 0)
+        return leftSpacing + anchorViewWidth/2
+    }
 	
 	fileprivate func fittingWidth() -> CGFloat {
 		if templateCell == nil {
-			templateCell = (cellNib.instantiate(withOwner: nil, options: nil)[0] as! DropDownCell)
+            templateCell = (tableView.dequeueReusableCell(withIdentifier: DPDConstant.ReusableIdentifier.DropDownCell) as! DropDownCell)
 		}
 		
 		var maxWidth: CGFloat = 0
 		
 		for index in 0..<dataSource.count {
 			configureCell(templateCell, at: index)
+            templateCell.setSelected(true, animated: false)
 			templateCell.bounds.size.height = cellHeight
 			let width = templateCell.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize).width
 			
@@ -872,21 +987,42 @@ extension DropDown {
         }
         
         if transform != nil {
-            tableViewContainer.transform = transform!
+
+            tableViewContainer.transform3D = cardIdentityTransform
         } else {
-            tableViewContainer.transform = downScaleTransform
+            tableViewContainer.transform3D = self.selectedFlipAnimation[0]
         }
 
 		layoutIfNeeded()
+        
+        //animationduration
+        
+        UIView.animateKeyframes(withDuration: CATransaction.animationDuration(), delay: 0.0, options: [], animations: {
+            UIView.addKeyframe(withRelativeStartTime: 0.0, relativeDuration: 0.5, animations: {
+                
+                self.tableViewContainer.transform3D = self.selectedFlipAnimation[1]
+            })
+            UIView.addKeyframe(withRelativeStartTime: 0.5, relativeDuration: 0.75, animations: {
+                self.tableViewContainer.transform3D = self.selectedFlipAnimation[2]
 
-		UIView.animate(
-			withDuration: animationduration,
-			delay: 0,
-			options: animationEntranceOptions,
-			animations: { [weak self] in
-				self?.setShowedState()
-			},
-			completion: nil)
+            })
+            UIView.addKeyframe(withRelativeStartTime: 0.75, relativeDuration: 1, animations: {
+                self.tableViewContainer.transform3D = self.cardIdentityTransform
+
+            })
+            UIView.addKeyframe(withRelativeStartTime: 0.0, relativeDuration: 1, animations: {
+                self.setShowedState()
+
+            })
+        })
+//		UIView.animate(
+//            withDuration: 5,
+//			delay: 0,
+//			options: animationEntranceOptions,
+//			animations: { [weak self] in
+//				self?.setShowedState()
+//			},
+//			completion: nil)
 
 		accessibilityViewIsModal = true
 		UIAccessibility.post(notification: .screenChanged, argument: self)
@@ -949,7 +1085,8 @@ extension DropDown {
 
 	fileprivate func setShowedState() {
 		alpha = 1
-		tableViewContainer.transform = CGAffineTransform.identity
+//        tableViewContainer.transform3D = CATransform3DIdentity
+//        tableViewContainer.transform3D = cardIdentityTransform
 	}
 
 }
@@ -1002,7 +1139,7 @@ extension DropDown {
 			else { return }
         
         // remove from indices
-        if let selectedRowIndex = selectedRowIndices.firstIndex(where: { $0 == index  }) {
+        if let selectedRowIndex = selectedRowIndices.index(where: { $0 == index  }) {
             selectedRowIndices.remove(at: selectedRowIndex)
         }
 
@@ -1205,5 +1342,3 @@ private extension DispatchQueue {
 		}
 	}
 }
-
-#endif
