@@ -53,6 +53,13 @@ internal struct DPDConstant {
 		static let EntranceOptions: UIView.AnimationOptions = [.allowUserInteraction, .curveEaseOut]
 		static let ExitOptions: UIView.AnimationOptions = [.allowUserInteraction, .curveEaseIn]
 		static let DownScaleTransform = CGAffineTransform(scaleX: 0.9, y: 0.9)
+		static var CardIdentityTransform: CATransform3D {
+		    get{
+			var identity = CATransform3DIdentity
+			identity.m34 = -1.0 / 500
+			return identity
+		    }
+        	}
 
 	}
 
