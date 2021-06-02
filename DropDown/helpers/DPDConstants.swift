@@ -27,7 +27,7 @@ internal struct DPDConstant {
 	internal struct UI {
 
 		static let TextColor = UIColor.black
-        static let SelectedTextColor = UIColor.black
+        	static let SelectedTextColor = UIColor.black
 		static let TextFont = UIFont.systemFont(ofSize: 15)
 		static let BackgroundColor = UIColor(white: 0.94, alpha: 1)
 		static let SelectionBackgroundColor = UIColor(white: 0.89, alpha: 1)
@@ -35,6 +35,7 @@ internal struct DPDConstant {
 		static let CornerRadius: CGFloat = 2
 		static let RowHeight: CGFloat = 44
 		static let HeightPadding: CGFloat = 20
+        	static let SeparatorInset = UIEdgeInsets.zero
 
 		struct Shadow {
 
