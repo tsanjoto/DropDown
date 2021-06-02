@@ -171,7 +171,6 @@ public final class DropDown: UIView {
     public var height: CGFloat? {
         didSet {
             setNeedsUpdateConstraints()
-            print("oii")
             var bot0 = cardIdentityTransform
             bot0 = CATransform3DTranslate(bot0, 0, -self.tableHeight / 2.7, 0);
             bot0 = CATransform3DTranslate(bot0, 0, 0, -self.tableHeight);
